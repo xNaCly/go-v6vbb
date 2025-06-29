@@ -23,24 +23,39 @@
       patchedSpec = pkgs.runCommand "patched-service-desc.json" {buildInputs = [pkgs.jq];} ''
         cp ${openapiSpec} spec.json
         jq '
-                  def walk(f):
-                    . as $in
-                    | if type == "object" then
-                        reduce keys[] as $key
-                          ( {}; . + { ($key): ($in[$key] | walk(f)) } ) | f
-                      elif type == "array" then map(walk(f)) | f
-                      else f
-                    end;
+          def walk(f):
+            . as $in
+            | if type == "object" then
+                reduce keys[] as $key
+                  ( {}; . + { ($key): ($in[$key] | walk(f)) } ) | f
+              elif type == "array" then map(walk(f)) | f
+              else f
+            end;
 
-                  walk(
-                    if type == "object" and .name? == "pretty" and .in? == "path"
-                    then .in = "query"
-                    else .
-                    end
-                  )
-                ' spec.json > $out
+          walk(
+            if type == "object" and .name? == "pretty" and .in? == "path"
+            then .in = "query"
+            else .
+            end
+          )
+          | (
+              .paths["/journeys"].get.parameters += [
+                {
+                  "name": "from",
+                  "in": "query",
+                  "required": true,
+                  "schema": { "type": "string" }
+                },
+                {
+                  "name": "to",
+                  "in": "query",
+                  "required": true,
+                  "schema": { "type": "string" }
+                }
+              ]
+            )
+        ' spec.json > $out
       '';
-
       oapi-codegen = pkgs.oapi-codegen;
     in {
       devShells.default = pkgs.mkShell {

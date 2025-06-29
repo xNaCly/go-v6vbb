@@ -98,7 +98,9 @@ type GetJourneysParams struct {
 	Language *string `form:"language,omitempty" json:"language,omitempty"`
 
 	// Pretty Pretty-print JSON responses?
-	Pretty *bool `form:"pretty,omitempty" json:"pretty,omitempty"`
+	Pretty *bool  `form:"pretty,omitempty" json:"pretty,omitempty"`
+	From   string `form:"from" json:"from"`
+	To     string `form:"to" json:"to"`
 }
 
 // GetJourneysParamsWalkingSpeed defines parameters for GetJourneys.
@@ -1064,6 +1066,30 @@ func NewGetJourneysRequest(server string, params *GetJourneysParams) (*http.Requ
 				}
 			}
 
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "from", runtime.ParamLocationQuery, params.From); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "to", runtime.ParamLocationQuery, params.To); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
 		}
 
 		queryURL.RawQuery = queryValues.Encode()
